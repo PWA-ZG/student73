@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" type="image/x-icon" href="/assets/img/favicon.ico">
+    <title>Stranica o fotografijama</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet"
+        crossorigin="anonymous" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.5.0/font/bootstrap-icons.css" />
+    <link rel="stylesheet" href="./assets/site.css" />
+    <link rel="manifest" href="./manifest.json" />
+</head>
+
+<body>
+    <div class="container">
+        <h1>Fotografiranje!</h1>
+        <p>
+          Na našoj stranici možete i sebe fotografirati! Nakon fotografiranja, dajte ime svojoj slici!
+          Ta slika će se pojaviti u vašoj galeriji!
+        </p>
+        
+      </div>
+
+    <div id="snapPhoto" class="d-flex flex-column align-items-center">
+        <h3>Vaša kamera:</h3>
+        <div id="beforeSnap" class="d-flex flex-column align-items-center">
+            <video id="player" width="100%" autoplay></video>
+            <button class="btn btn-primary mt-2" id="btnSnap">
+                <i class="bi bi-camera"></i>
+                Uslikaj!!
+            </button>
+        </div>
+        <div id="afterSnap" class="d-none">
+            <canvas id="cnvFood"></canvas>
+            <input id="snapName" type="text" class="form-control mt-2"/>
+            <button class="btn btn-success" id="btnUpload">
+                <i class="bi bi-cloud-upload"></i>
+                Dodaj u galeriju
+            </button>
+        </div>
+    </div>
+
+    
+
+    <div class="button-container1">
+        <a id="gumb1" href="index.html">Vrati se na početnu stranicu</a>
+
+        <div id="slika">
+            <img src="./assets/img/photo.png" alt="Photo">
+        </div>
+    </div>
+
+
+
+    </body>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js" crossorigin="anonymous">
+    </script>
+    <script type="module">
+        import {
+                get,
+                set,
+            } from "https://cdn.jsdelivr.net/npm/idb-keyval@6/+esm";
+
+            let player = document.getElementById("player");
+            let canvas = document.getElementById("cnvFood");
+            let beforeSnap = document.getElementById("beforeSnap");
+            let afterSnap = document.getElementById("afterSnap");
+            let snapName = document.getElementById("snapName");
+            let startCapture = function () {                
+                beforeSnap.classList.remove("d-none");
+                beforeSnap.classList.add("d-flex", "flex-column", "align-items-center");
+                afterSnap.classList.remove("d-flex", "flex-column", "align-items-center");
+                afterSnap.classList.add("d-none");
+                if (!("mediaDevices" in navigator)) {
+                    // fallback to file upload button, ili sl.
+                    // vidjet i custom API-je: webkitGetUserMedia i mozGetUserMedia
+                } else {
+                    navigator.mediaDevices
+                        .getUserMedia({ video: true, audio: false })
+                        .then((stream) => {
+                            player.srcObject = stream;
+                        })
+                        .catch((err) => {
+                            alert("Media stream not working");
+                            console.log(err);
+                        });
+                }
+            };
+            startCapture();
+            let stopCapture = function () {
+                afterSnap.classList.remove("d-none");
+                afterSnap.classList.add("d-flex", "flex-column", "align-items-center");
+                beforeSnap.classList.remove("d-flex", "flex-column", "align-items-center");
+                beforeSnap.classList.add("d-none");
+                player.srcObject.getVideoTracks().forEach(function (track) {
+                    track.stop();
+                });
+            }
+            document
+                .getElementById("btnSnap")
+                .addEventListener("click", function (event) {
+                    canvas.width = player.getBoundingClientRect().width;
+                    canvas.height = player.getBoundingClientRect().height;                    
+                    canvas
+                        .getContext("2d")
+                        .drawImage(player, 0, 0, canvas.width, canvas.height);
+                    stopCapture();
+                });
+            document
+                .getElementById("btnUpload")
+                .addEventListener("click", function (event) {
+                    event.preventDefault();
+                    if (!snapName.value.trim()) {
+                        alert("Give it a cathcy name!");
+                        return false;
+                    }
+                    if (
+                        "serviceWorker" in navigator &&
+                        "SyncManager" in window
+                    ) {
+                        let url = canvas.toDataURL();
+                        fetch(url)
+                            .then((res) => res.blob())
+                            .then((blob) => {
+                                let ts = new Date().toISOString();
+                                let id = ts + snapName.value.replace(/\s/g, '_');  // ws->_
+                                set(id, {
+                                    id,
+                                    ts,
+                                    title: snapName.value,
+                                    image: blob
+                                });
+                                return navigator.serviceWorker.ready;
+                            })
+                            .then((swRegistration) => {
+                                return swRegistration.sync.register(
+                                    "sync-snaps"
+                                );
+                            })
+                            .then(() => {
+                                console.log("Queued for sync");
+                                startCapture();
+                            })
+                            .catch((err) => {
+                                console.log(error);
+                            });
+                    } else {
+                        // fallback
+                        // pokusati poslati, pa ako ima mreze onda dobro...
+                        alert("TODO - vaš preglednik ne podržava bckg sync...");
+                    }
+                });
+        </script>
+
+
+
+</html>

@@ -1,0 +1,20 @@
+{
+    "name": "Peti projekt iz Web2",
+    "short_name": "Peti projekt",
+    "description": "Peti projekt iz predmeta Web2",
+    "display": "standalone",
+    "theme_color": "red",
+    "background_color": "#DDD",
+    "start_url": "/index.html",
+    "scope": ".",
+    "orientation": "portrait-primary",
+    "dir": "ltr",
+    "lang": "en-US",
+    "prefer_related_applications": true,
+    "icons": [
+      {
+        "src": "assets/img/photo.png",
+        "sizes": "360x360"
+      }
+    ]
+  }
